@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-width=1.0">
+    <title>ByteCode - ServiceNow Mock</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --surface: #0f172a;
+            --surface-light: #1e293b;
+            --text: #f8fafc;
+            --primary: #1e40af;
+            --primary-light: #3b82f6;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --border: #334155;
+        }
+
+        body {
+            margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color); color: var(--text);
+            height: 100vh; display: flex; overflow: hidden;
+        }
+
+        /* Sistema de Login */
+        #login-screen {
+            width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;
+            background-color: var(--bg-color); position: absolute; z-index: 100;
+        }
+        .login-box {
+            background-color: var(--surface); padding: 40px; border-radius: 8px; text-align: center;
+            width: 350px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .login-box img { max-width: 250px; margin-bottom: 30px; }
+        .login-box input {
+            width: 100%; padding: 12px; margin-bottom: 15px; background-color: var(--bg-color);
+            color: white; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box;
+        }
+
+        #app-layout { display: none; width: 100%; height: 100%; }
+
+        /* Toasts (gs.addInfoMessage mock) */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 15px 20px; border-radius: 4px; color: white; min-width: 250px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); animation: slideIn 0.3s ease-out; }
+        .toast.info { background-color: var(--primary-light); border-left: 5px solid var(--primary); }
+        .toast.error { background-color: var(--danger); border-left: 5px solid #991b1b; }
+        .toast.warning { background-color: var(--warning); border-left: 5px solid #b45309; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        /* Layout Base ServiceNow */
+        nav { width: 250px; background-color: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 5px; border-right: 1px solid var(--border); }
+        nav img { max-width: 160px; margin-bottom: 20px; align-self: center; }
+        nav span { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; font-weight: bold; padding-left: 10px;}
+        nav button { background: none; border: none; color: var(--text); padding: 10px 15px; text-align: left; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        nav button:hover, nav button.active { background-color: var(--surface-light); color: var(--primary-light); font-weight: bold; }
+
+        main { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Componentes */
+        .header-action { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .btn { background-color: var(--surface-light); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .btn.primary { background-color: var(--primary); border-color: var(--primary); color: white; }
+        .btn.danger { background-color: var(--danger); border-color: var(--danger); color: white; }
+        .btn:hover { filter: brightness(1.2); }
+
+        .form-section { background-color: var(--surface); padding: 20px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; }
+        .form-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 0.85rem; color: #cbd5e1; }
+        .form-group label.mandatory::before { content: "* "; color: var(--danger); }
+        .form-group input, .form-group select { padding: 8px; background-color: var(--bg-color); color: white; border: 1px solid var(--border); border-radius: 4px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-light); }
+
+        /* List View (Table) */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background-color: var(--surface-light); color: #94a3b8; font-weight: normal; }
+        tbody tr:hover { background-color: rgba(59, 130, 246, 0.1); cursor: pointer; }
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge.sucesso { background-color: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .badge.falha { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* Modal (Form View Record) */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background-color: var(--surface); width: 600px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background-color: var(--surface-light); border-radius: 8px 8px 0 0; }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border); text-align: right; background-color: var(--surface-light); border-radius: 0 0 8px 8px; }
+
+        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <img src="bytecode.png" alt="ByteCode" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iNTAiPjx0ZXh0IHk9IjI1IiBmaWxsPSJ3aGl0ZSI+Qnl0ZUNvZGUgTG9nbzwvdGV4dD48L3N2Zz4='">
+            <form onsubmit="fazerLogin(event)">
+                <input type="text" placeholder="ID de Usuário" required>
+                <input type="password" placeholder="Senha" required>
+                <button type="submit" class="btn primary" style="width: 100%; padding: 12px; margin-top: 10px;">Acessar Painel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-layout">
+        <nav>
+            <img src="bytecode.png" alt="ByteCode" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iNTAiPjx0ZXh0IHk9IjI1IiBmaWxsPSJ3aGl0ZSI+Qnl0ZUNvZGUgTG9nbzwvdGV4dD48L3N2Zz4='">
+            
+            <span>Visão Geral</span>
+            <button onclick="navigate('tela-dashboard')" id="nav-dashboard" class="active">Dashboard SecOps</button>
+            
+            <span>Auditoria</span>
+            <button onclick="navigate('tela-relatorio')" id="nav-relatorio">Logs de Acesso</button>
+            
+            <span>Administração</span>
+            <button onclick="navigate('tela-cadastros')" id="nav-cadastros">Ativos (CI)</button>
+            
+            <span>Testes</span>
+            <button onclick="navigate('tela-acesso')" id="nav-acesso">Simulador de Input</button>
+
+            <button onclick="sair()" style="margin-top: auto; color: var(--danger); border-top: 1px solid var(--border); border-radius: 0; padding-top: 20px;">Encerrar Sessão</button>
+        </nav>
+
+        <main>
+            <div id="tela-dashboard" class="screen active">
+                <div class="header-action">
+                    <h2>Dashboard de Segurança (Zero Trust)</h2>
+                    <button class="btn" onclick="atualizarGraficos()">Atualizar Relatórios</button>
+                </div>
+                <div class="charts-container">
+                    <div class="form-section">
+                        <canvas id="graficoStatus"></canvas>
+                    </div>
+                    <div class="form-section">
+                        <canvas id="graficoLocais"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tela-relatorio" class="screen">
+                <div class="header-action">
+                    <h2>Logs de Acesso (Incidentes)</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="filtro-local" class="btn" onchange="renderizarTabela()">
+                            <option value="Todos">Todos os Locais</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-section" style="padding: 0;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID do Log</th>
+                                <th>Dispositivo (Caller)</th>
+                                <th>Geofence</th>
+                                <th>Horário</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-relatorio"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tela-cadastros" class="screen">
+                <div class="header-action">
+                    <h2>Gerenciamento de Itens de Configuração (CIs)</h2>
+                </div>
+                
+                <div class="form-section">
+                    <h3 style="margin-top: 0; color: #94a3b8; font-size: 1rem;">Novo Local (Geofence)</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="mandatory">Nome do Local</label>
+                            <input type="text" id="novo-local" placeholder="Ex: Filial RJ - Setor B" oninput="markDirty()">
+                        </div>
+                    </div>
+                    <button class="btn primary" onclick="salvarLocal()">Submit</button>
+                </div>
+
+                <div class="form-section">
+                    <h3 style="margin-top: 0; color: #94a3b8; font-size: 1rem;">Novo Dispositivo (Hardware)</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="mandatory">Identificador do Dispositivo</label>
+                            <input type="text" id="novo-dispositivo" placeholder="Ex: Quest 3 - ID 9928" oninput="markDirty()">
+                        </div>
+                    </div>
+                    <button class="btn primary" onclick="salvarDispositivo()">Submit</button>
+                </div>
+            </div>
+
+            <div id="tela-acesso" class="screen">
+                <div class="header-action">
+                    <h2>Testador de API (Simulação de VR)</h2>
+                </div>
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Dispositivo Origem</label>
+                            <select id="simula-dispositivo"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Localização (Geofence)</label>
+                            <select id="simula-local"></select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn primary" onclick="simularNovoAcesso(true)">Forçar Token Válido (200 OK)</button>
+                        <button class="btn danger" onclick="simularNovoAcesso(false)">Forçar Token Inválido (401 Auth)</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modal-registro">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin: 0;" id="modal-title">Log de Segurança</h3>
+                <button class="btn" style="padding: 2px 8px;" onclick="fecharModal()">X</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Sys ID do Log</label>
+                        <input type="text" id="reg-id" readonly disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado da Resolução</label>
+                        <input type="text" id="reg-status" readonly disabled>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Item de Configuração (CI)</label>
+                        <input type="text" id="reg-ci" readonly disabled>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Local de Origem</label>
+                        <input type="text" id="reg-local" readonly disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Data/Hora do Evento</label>
+                        <input type="text" id="reg-hora" readonly disabled>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Anotações do Sistema</label>
+                    <textarea id="reg-notas" rows="3" readonly disabled style="background-color: var(--bg-color); color: white; border: 1px solid var(--border); padding: 8px; resize: none;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn primary" onclick="fecharModal()">Concluir Análise</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartStatus = null;
+        let chartLocais = null;
+        let g_form_modified = false; // Simulação ServiceNow Dirty Form
+
+        // Notificações estilo ServiceNow (GlideSystem)
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 4000);
+        }
+
+        // Inicializa BD no LocalStorage
+        function initDB() {
+            if (!localStorage.getItem('accessLogs')) {
+                localStorage.setItem('accessLogs', JSON.stringify([
+                    { id: 'LOG0001021', dispositivo: 'Quest 3 - Wuzuy', local: 'Sede RJ', horario: new Date().toLocaleString('pt-BR'), status: 'sucesso', notas: 'Autenticação biométrica validada e token emitido.' },
+                    { id: 'LOG0001022', dispositivo: 'Dispositivo Desconhecido', local: 'IP Externo', horario: new Date().toLocaleString('pt-BR'), status: 'falha', notas: 'Tentativa de acesso bloqueada. Flag de anomalia comportamental disparada.' }
+                ]));
+                localStorage.setItem('locais', JSON.stringify(['Sede RJ', 'IP Externo', 'Filial SP']));
+                localStorage.setItem('dispositivos', JSON.stringify(['Quest 3 - Wuzuy', 'Quest Pro - Admin']));
+            }
+        }
+
+        // Controles de Login
+        function fazerLogin(e) {
+            e.preventDefault();
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-layout').style.display = 'flex';
+            showToast('Sessão iniciada com sucesso.', 'info');
+            updateViews();
+        }
+
+        function sair() {
+            document.getElementById('app-layout').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.querySelector('form').reset();
+        }
+
+        // Navegação com verificação de Form Dirty
+        function navigate(targetId) {
+            if (g_form_modified) {
+                const confirmar = confirm("Você possui alterações não salvas (Unsaved changes). Tem certeza que deseja sair desta página?");
+                if (!confirmar) return;
+                clearDirtyForm();
+            }
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(targetId).classList.add('active');
+            document.getElementById('nav-' + targetId.split('-')[1]).classList.add('active');
+            
+            if(targetId === 'tela-dashboard') atualizarGraficos();
+            if(targetId === 'tela-relatorio') renderizarTabela();
+        }
+
+        // Controles de Formulário (Dirty)
+        function markDirty() { g_form_modified = true; }
+        function clearDirtyForm() {
+            g_form_modified = false;
+            document.getElementById('novo-local').value = '';
+            document.getElementById('novo-dispositivo').value = '';
+        }
+
+        // Ações de Cadastro (CORRIGIDAS com || [])
+        function salvarLocal() {
+            const input = document.getElementById('novo-local');
+            if (!input.value.trim()) {
+                showToast('Campo "Nome do Local" é obrigatório.', 'warning');
+                input.focus();
+                return;
+            }
+            const locais = JSON.parse(localStorage.getItem('locais')) || [];
+            locais.push(input.value);
+            localStorage.setItem('locais', JSON.stringify(locais));
+            
+            showToast(`Local "${input.value}" registrado com sucesso.`, 'info');
+            clearDirtyForm();
+            atualizarSelects();
+        }
+
+        function salvarDispositivo() {
+            const input = document.getElementById('novo-dispositivo');
+            if (!input.value.trim()) {
+                showToast('Campo "Identificador do Dispositivo" é obrigatório.', 'warning');
+                input.focus();
+                return;
+            }
+            const dispositivos = JSON.parse(localStorage.getItem('dispositivos')) || [];
+            dispositivos.push(input.value);
+            localStorage.setItem('dispositivos', JSON.stringify(dispositivos));
+            
+            showToast(`CI de Hardware "${input.value}" inserido no CMDB.`, 'info');
+            clearDirtyForm();
+            atualizarSelects();
+        }
+
+        // List View: Relatórios
+        function renderizarTabela() {
+            const logs = JSON.parse(localStorage.getItem('accessLogs')) || [];
+            const filtro = document.getElementById('filtro-local').value;
+            const tbody = document.getElementById('tabela-relatorio');
+            tbody.innerHTML = '';
+            
+            const logsFiltrados = filtro === 'Todos' ? logs : logs.filter(l => l.local === filtro);
+            
+            logsFiltrados.slice().reverse().forEach(log => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => abrirRegistro(log);
+                tr.innerHTML = `
+                    <td style="color: var(--primary-light); font-weight: bold;">${log.id}</td>
+                    <td>${log.dispositivo}</td>
+                    <td>${log.local}</td>
+                    <td>${log.horario}</td>
+                    <td><span class="badge ${log.status}">${log.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Form View: Modal de Registros
+        function abrirRegistro(log) {
+            document.getElementById('modal-title').innerText = `Incidente de Segurança: ${log.id}`;
+            document.getElementById('reg-id').value = log.id;
+            document.getElementById('reg-status').value = log.status.toUpperCase();
+            document.getElementById('reg-ci').value = log.dispositivo;
+            document.getElementById('reg-local').value = log.local;
+            document.getElementById('reg-hora').value = log.horario;
+            document.getElementById('reg-notas').value = log.notas || 'Sem anotações adicionais.';
+            
+            document.getElementById('modal-registro').style.display = 'flex';
+        }
+        function fecharModal() { document.getElementById('modal-registro').style.display = 'none'; }
+
+        // Dropdowns Dinâmicos
+        function atualizarSelects() {
+            const locais = JSON.parse(localStorage.getItem('locais')) || [];
+            const dispositivos = JSON.parse(localStorage.getItem('dispositivos')) || [];
+            
+            const filtroLocal = document.getElementById('filtro-local');
+            const simulaLocal = document.getElementById('simula-local');
+            const simulaDisp = document.getElementById('simula-dispositivo');
+
+            filtroLocal.innerHTML = '<option value="Todos">Todos os Locais</option>';
+            simulaLocal.innerHTML = ''; simulaDisp.innerHTML = '';
+
+            locais.forEach(l => {
+                filtroLocal.innerHTML += `<option value="${l}">${l}</option>`;
+                simulaLocal.innerHTML += `<option value="${l}">${l}</option>`;
+            });
+            dispositivos.forEach(d => {
+                simulaDisp.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+        }
+
+        // Gráficos interativos com Chart.js
+        function atualizarGraficos() {
+            const logs = JSON.parse(localStorage.getItem('accessLogs')) || [];
+            const sucessos = logs.filter(l => l.status === 'sucesso').length;
+            const falhas = logs.filter(l => l.status === 'falha').length;
+
+            const ctxStatus = document.getElementById('graficoStatus').getContext('2d');
+            if (chartStatus) chartStatus.destroy();
+            chartStatus = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Autorizado', 'Bloqueado'],
+                    datasets: [{ data: [sucessos, falhas], backgroundColor: ['#22c55e', '#ef4444'], borderColor: '#0f172a' }]
+                },
+                options: { plugins: { title: { display: true, text: 'Métricas de Autenticação', color: '#cbd5e1' }, legend: { labels: { color: '#cbd5e1' } } } }
+            });
+
+            const acessosPorLocal = {};
+            logs.forEach(l => { acessosPorLocal[l.local] = (acessosPorLocal[l.local] || 0) + 1; });
+
+            const ctxLocais = document.getElementById('graficoLocais').getContext('2d');
+            if (chartLocais) chartLocais.destroy();
+            chartLocais = new Chart(ctxLocais, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(acessosPorLocal),
+                    datasets: [{ label: 'Qtd de Interações', data: Object.values(acessosPorLocal), backgroundColor: '#3b82f6' }]
+                },
+                options: { 
+                    plugins: { title: { display: true, text: 'Distribuição por Geofence', color: '#cbd5e1' }, legend: { display: false } },
+                    scales: { y: { ticks: { color: '#cbd5e1' }, beginAtZero: true }, x: { ticks: { color: '#cbd5e1' } } }
+                }
+            });
+        }
+
+        // Mock de Requisição (Simulador)
+        function simularNovoAcesso(isSucesso) {
+            const logs = JSON.parse(localStorage.getItem('accessLogs')) || [];
+            const disp = document.getElementById('simula-dispositivo').value;
+            const loc = document.getElementById('simula-local').value;
+            
+            const novoId = 'LOG' + Math.floor(Math.random() * 90000 + 10000);
+
+            logs.push({
+                id: novoId,
+                dispositivo: isSucesso ? disp : 'Não Autorizado / Spoofing',
+                local: loc,
+                horario: new Date().toLocaleString('pt-BR'),
+                status: isSucesso ? 'sucesso' : 'falha',
+                notas: isSucesso ? 'Sessão iniciada com sucesso via payload JWT.' : 'Payload rejeitado pelo gateway. Assinatura inválida.'
+            });
+            
+            localStorage.setItem('accessLogs', JSON.stringify(logs));
+            
+            showToast(isSucesso ? 'Payload enviado: 200 OK' : 'Payload enviado: 401 Unauthorized', isSucesso ? 'info' : 'error');
+            
+            updateViews();
+            setTimeout(() => { navigate('tela-relatorio'); }, 1000);
+        }
+
+        function updateViews() { renderizarTabela(); atualizarSelects(); atualizarGraficos(); }
+        
+        // Inicializa a aplicação
+        initDB();
+        
+        // Renderiza tudo (escondido atrás da tela de login no início)
+        updateViews();
+    </script>
+</body>
+</html>
