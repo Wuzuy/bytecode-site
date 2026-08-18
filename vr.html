@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ByteCode — O óculos em ação (prints VR)</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="brand"><img src="ByteCode.png" alt="ByteCode" onerror="this.style.display='none'"><span>BYTE<span class="tag">CODE</span></span></div>
+    <div class="links">
+      <a href="index.html">Início</a>
+      <a href="vr.html" class="active">Óculos (VR)</a>
+      <a href="dashboard.html">Central de Segurança</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+
+    <header class="hero">
+      <span class="kicker">// Preview do headset</span>
+      <h1>O que aparece <span class="bc">no óculos</span></h1>
+      <p class="sub">
+        Reprodução em HTML dos estados do protótipo Unity (<span class="mono" style="font-family:var(--mono)">SecurityStateController.cs</span>).
+        A mesma lógica de tela que roda no Meta Quest, visível aqui sem o headset.
+      </p>
+    </header>
+
+    <section>
+      <span class="kicker">// Demo interativa</span>
+      <h2>Fluxo de autenticação (4 estados)</h2>
+      <p>Use os botões abaixo — os mesmos mapeamentos do protótipo: <b>A</b> (sem acesso), <b>B</b> (autenticar), <b>Gatilho</b> (autorizado). No teclado: <b>1</b>, <b>2</b>, <b>3</b>.</p>
+
+      <div class="vr-lab">
+        <div class="frame">
+          <div class="bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="name">ByteCode VR · visão do usuário</span><span class="hud">SESSAO: NENHUMA</span>
+          </div>
+          <div class="viewport" id="viewport">
+            <div class="scene-bg"></div>
+            <div class="scanline" id="scanline" style="display:none;"></div>
+
+            <div class="overlay-panel" id="panel-semacesso">
+              <div class="glass">
+                <div class="lock-icon">🔒</div>
+                <div class="status">Acesso bloqueado</div>
+                <h4>Sem chave de acesso</h4>
+                <p>Sem a chave, nenhum aplicativo do óculos abre.</p>
+              </div>
+            </div>
+
+            <div class="overlay-panel blurred" id="panel-autenticando" style="display:none;">
+              <div class="glass">
+                <div class="spinner"></div>
+                <div class="status">Autenticando</div>
+                <h4>Processando autenticação...</h4>
+                <p class="mono" style="font-family:var(--mono)" id="typing"></p>
+              </div>
+            </div>
+
+            <div class="overlay-panel" id="panel-autorizado" style="display:none;">
+              <div class="glass" style="border-color: rgba(52,211,153,.6);">
+                <div class="lock-icon">✅</div>
+                <div class="status" style="color: var(--success);">Autorizado</div>
+                <h4>Acesso liberado</h4>
+                <p>Bem-vindo. Aplicativos disponíveis conforme seu cargo.</p>
+              </div>
+            </div>
+
+            <div class="overlay-panel blurred" id="panel-naoautorizado" style="display:none;">
+              <div class="glass" style="border-color: rgba(248,113,113,.6);">
+                <div class="lock-icon">⛔</div>
+                <div class="status" style="color: var(--danger);">Não autorizado</div>
+                <h4>Acesso negado</h4>
+                <p>Credencial incompatível. O evento foi registrado e alertado à central.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Simulador de estado</h3>
+          <p style="font-size:.9rem">A mesma máquina de estados do Unity, em HTML.</p>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <button class="btn" id="b-semacesso">1 · Sem acesso (bloqueado)</button>
+            <button class="btn" id="b-autenticando">2 · Autenticar (B / tecla 2)</button>
+            <button class="btn success" id="b-autorizado">3 · Autorizado (gatilho)</button>
+          </div>
+          <div class="code-block" style="margin-top:16px;">
+<span>// SecurityStateController.cs (resumo)</span>
+<span>SetState(telaSemAcesso);        // inicio</span>
+<span>SetState(telaAutenticando);     // botao B / tecla 2</span>
+<span>SetState(telaAutorizado);       // gatilho / tecla 3</span>
+<span>painelBlurTotal -> visivel quando NAO autorizado</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <span class="kicker">// Autenticação corporal</span>
+      <h2>Leitura dos traços da mão</h2>
+      <div class="grid cols-2">
+        <div class="frame">
+          <div class="bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="name">Captura biométrica · palma da mão</span><span class="hud">CV ONLINE</span>
+          </div>
+          <div class="viewport">
+            <div class="scene-bg"></div>
+            <div class="hand-grid"></div>
+            <div class="hand-ring"></div>
+            <div class="hand-scan">
+              <div class="hand">🖐️</div>
+            </div>
+            <div class="scanline"></div>
+            <div class="overlay-panel" style="justify-content:flex-end; padding-bottom:18px;">
+              <span class="pill green">Pontos de geometria: 42/42</span>
+              <span class="pill cyan">Padrão vascular: confere</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Por que a mão?</h3>
+          <ul style="color: var(--muted); padding-left: 18px;">
+            <li><b style="color:var(--text)">Difícil de forjar:</b> traços da palma e veias não aparecem em foto ou cartão.</li>
+            <li><b style="color:var(--text)">Alta acurácia:</b> a palma tem mais características biométricas que a impressão digital.</li>
+            <li><b style="color:var(--text)">Não invasivo:</b> captura pela própria câmera do óculos, sem toque ou sensor extra.</li>
+            <li><b style="color:var(--text)">Combina com credencial:</b> traços + crachá + papel (RBAC) = verificação em camadas.</li>
+          </ul>
+          <div class="code-block" style="margin-top:14px;">
+<span>// CV pipeline (proposto)</span>
+<span>frame = câmera do óculos</span>
+<span>mão = detect(frame)          -> MediaPipe/ONNX</span>
+<span>traços = extrai(mão)        -> geometria + veias</span>
+<span>score = match(traços, db)   -> 0..1</span>
+<span>if score &gt; limiar: autorizar</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <span class="kicker">// Porteiro</span>
+      <h2>Visão do porteiro na portaria</h2>
+      <div class="vr-lab">
+        <div class="frame">
+          <div class="bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="name">Visão do porteiro · portaria</span><span class="hud">MODO PORTA</span>
+          </div>
+          <div class="viewport">
+            <div class="scene-bg"></div>
+            <div class="overlay-panel">
+              <div class="glass person-card">
+                <div class="person-avatar">JM</div>
+                <div class="person-info">
+                  <div class="nm">João M. — Fornecedor</div>
+                  <div class="dt">CREDENCIAL: EMPRESTADA · PAPEL: VISITANTE</div>
+                  <div class="dt" style="color: var(--warning);">⚠ TRAÇO DA MÃO NÃO CONFERE COM A CREDENCIAL</div>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn success" style="padding:6px 14px;">Liberar</button>
+                <button class="btn danger" style="padding:6px 14px;">Bloquear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Segurança antes da catraca</h3>
+          <p>
+            O porteiro vê a pessoa chegando com os dados sobrepostos — como um <b>leitor facial</b>, mas usando
+            traços corporais. Mesmo que a pessoa esteja com um cartão válido, roubado ou emprestado,
+            a incompatibilidade com o corpo identificado aparece <b>antes</b> da liberação.
+          </p>
+          <p>
+            Aprovar ou bloquear acontece ali mesmo, e cada decisão vira um log na central de segurança.
+          </p>
+          <a class="btn primary" href="dashboard.html">Ver os logs na Central</a>
+        </div>
+      </div>
+    </section>
+
+    <div style="margin-top:44px; text-align:center;">
+      <a class="btn" href="index.html">← Voltar ao conceito</a>
+      <a class="btn primary" href="dashboard.html">Abrir a Central de Segurança →</a>
+    </div>
+
+  </div>
+
+  <footer class="foot">
+    <div class="mono">BYTECODE — controle de acesso industrial em realidade virtual</div>
+    <div>Projeto em desenvolvimento · <a href="https://github.com/Wuzuy/bytecode-site">github.com/Wuzuy/bytecode-site</a></div>
+  </footer>
+
+  <script>
+    const panels = {
+      semacesso: 'panel-semacesso',
+      autenticando: 'panel-autenticando',
+      autorizado: 'panel-autorizado',
+      naoautorizado: 'panel-naoautorizado'
+    };
+    const blurOn = { autenticando: true, naoautorizado: true };
+
+    function setState(nome, viaAuto) {
+      for (const k in panels) {
+        const el = document.getElementById(panels[k]);
+        el.style.display = (k === nome) ? 'flex' : 'none';
+      }
+      document.getElementById('scanline').style.display = (nome === 'autenticando') ? 'block' : 'none';
+      const hud = document.querySelector('.frame .bar .hud');
+      if (hud) {
+        const map = { semacesso: 'SESSAO: NENHUMA', autenticando: 'SESSAO: PROCESSANDO', autorizado: 'SESSAO: ATIVA', naoautorizado: 'SESSAO: NEGADA' };
+        hud.textContent = map[nome];
+      }
+      if (nome === 'autenticando' && viaAuto !== false) {
+        const t = document.getElementById('typing');
+        const text = "Lendo traços da mão... comparando com cadastro...";
+        t.textContent = '';
+        let i = 0;
+        const iv = setInterval(() => {
+          t.textContent += text[i];
+          i++;
+          if (i >= text.length) {
+            clearInterval(iv);
+            setTimeout(() => setState('naoautorizado'), 900);
+          }
+        }, 45);
+      }
+    }
+
+    document.getElementById('b-semacesso').onclick = () => setState('semacesso');
+    document.getElementById('b-autenticando').onclick = () => setState('autenticando');
+    document.getElementById('b-autorizado').onclick = () => setState('autorizado');
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '1') setState('semacesso');
+      if (e.key === '2') setState('autenticando');
+      if (e.key === '3') setState('autorizado');
+    });
+
+    setState('semacesso');
+  </script>
+
+</body>
+</html>
