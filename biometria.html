@@ -64,7 +64,7 @@
       <div class="card" style="padding:0; overflow:auto;">
         <table>
           <thead>
-            <tr><th>Usuário</th><th>Empresa</th><th>Status</th><th>Template</th><th>Salvamentos</th><th>Cadastrado em</th><th>Ações</th></tr>
+            <tr><th>Usuário</th><th>Empresa</th><th>Status</th><th>Template</th><th>Modelos</th><th>Cadastrado em</th><th>Ações</th></tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
@@ -183,7 +183,7 @@
               <td>${u.company || '-'}</td>
               <td><span class="badge ${tem ? 'ok' : 'no'}">${tem ? 'CADASTRADA' : 'SEM CADASTRO'}</span></td>
               <td class="mono">${tem ? st.tamanho + ' dims' : '—'}</td>
-              <td class="mono">${tem ? (st.salvamentos ?? '?') : '—'}</td>
+              <td class="mono">${tem ? (st.modelos ?? '?') + ' modelo(s)' : '—'}</td>
               <td class="mono">${tem ? (st.criadoEm || '—') : '—'}</td>
               <td>${tem ? `<a class="link" onclick="verMao('${u.username}')">Ver mão 3D</a>` : ''}
                   ${tem ? `<a class="link danger" onclick="pedirDelete('${u.name}', '${u.username}')">Deletar</a>` : '<span class="empty">—</span>'}</td>
