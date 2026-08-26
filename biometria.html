@@ -77,11 +77,19 @@
   </div>
 
   <div class="modal" id="modal3d">
-    <div class="box">
+    <div class="box" style="width:auto;">
       <button class="close-x" onclick="fechar3d()">✕</button>
       <h3 id="m3d-title" style="margin-top:0;">Mão em 3D</h3>
-      <div id="view3d"></div>
-      <p style="font-size:.78rem; color:var(--muted); margin:10px 0 0;">Arraste para girar · scroll para zoom</p>
+      <div style="display:flex; gap:18px; flex-wrap:wrap;">
+        <div>
+          <div id="view3d"></div>
+          <p style="font-size:.78rem; color:var(--muted); margin:10px 0 0;">Esqueleto · arraste para girar · scroll para zoom</p>
+        </div>
+        <div>
+          <canvas id="canvasPalma" width="256" height="256" style="background:#0b1220; border-radius:10px; display:block;"></canvas>
+          <p style="font-size:.78rem; color:var(--muted); margin:10px 0 0;">Impressão palmar (linhas realçadas)</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -203,12 +211,43 @@
       const st = await api('/biometria/' + encodeURIComponent(username));
       document.getElementById('m3d-title').textContent = 'Mão em 3D — ' + st.name + ' (' + username + ')';
       document.getElementById('modal3d').style.display = 'flex';
-      renderHand(st.landmarks, st.name);
+      renderHand(st.landmarks, st.palma, st.name);
     }
 
-    function renderHand(landmarks, nome) {
+    // Desenha a impressão palmar (grade de tons de cinza) no canvas.
+    function desenharPalma(palma) {
+      const canvas = document.getElementById('canvasPalma');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!palma || palma.length < 256) {
+        ctx.fillStyle = 'rgba(148,163,184,.6)';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Sem impressão palmar salva', canvas.width / 2, canvas.height / 2);
+        return;
+      }
+      const lado = Math.round(Math.sqrt(palma.length));
+      const img = ctx.createImageData(canvas.width, canvas.height);
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const gx = Math.min(lado - 1, Math.floor(x * lado / canvas.width));
+          const gy = Math.min(lado - 1, Math.floor(y * lado / canvas.height));
+          const v = palma[gy * lado + gx];
+          const c = Math.round(Math.max(0, Math.min(1, v)) * 255);
+          const i = (y * canvas.width + x) * 4;
+          img.data[i] = c;
+          img.data[i + 1] = c;
+          img.data[i + 2] = c;
+          img.data[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    function renderHand(landmarks, palma, nome) {
       const box = document.getElementById('view3d');
       box.innerHTML = '';
+      desenharPalma(palma);
       if (!landmarks || landmarks.length !== 21) {
         box.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);">' +
           'Sem esqueleto 3D salvo — cadastre a mão novamente pelo óculos (E) para gerar a visualização.</div>';
