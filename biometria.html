@@ -34,6 +34,21 @@
     .link.danger { color: var(--danger); }
     .empty { color: var(--muted); font-size: .85rem; }
     .badge.no { color: var(--warning); border-color: var(--warning); }
+
+    /* Responsivo p/ o navegador do Meta Quest (VR) e telas estreitas */
+    @media (max-width: 900px) {
+      body { flex-direction: column; overflow: auto; }
+      nav.app { width: 100%; flex-direction: row; align-items: center; gap: 10px; overflow-x: auto; padding: 10px 14px; border-right: none; border-bottom: 1px solid var(--border); }
+      nav.app .brand { margin: 0 8px 0 0; white-space: nowrap; }
+      main { padding: 16px; }
+      .head h2 { font-size: 1.05rem; }
+      #view3d { width: 92vw; height: 62vw; max-height: 58vh; }
+      .modal .box { width: 96vw; }
+      .modal .box > div[style*="flex"] { flex-direction: column; }
+      #canvasPalma { width: 92vw; max-width: 300px; height: auto; }
+      table { font-size: .8rem; }
+      .actions button { font-size: .72rem; }
+    }
   </style>
 </head>
 <body>
