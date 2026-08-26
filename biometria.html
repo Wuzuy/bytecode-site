@@ -84,10 +84,7 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
-      <p style="font-size:.8rem; color:var(--muted); margin-top:16px;">
-        A biometria é capturada no óculos (Unity + MediaPipe). O cadastro chega aqui com o esqueleto 3D da mão.
-        Para cadastrar uma mão: use o óculos ou a tecla E no simulador. Deletar aqui remove o template — o usuário volta a ficar SEM CADASTRO.
-      </p>
+      <p style="font-size:.78rem; color:var(--muted); margin:12px 0 0;">Backend atual: <span class="mono" id="api-atual">?</span> · use <span class="mono">?api=http://IP:PORTA</span> na URL para apontar para outro servidor.</p>
     </main>
   </div>
 
@@ -120,7 +117,7 @@
   </div>
 
   <script>
-    const API = 'http://localhost:3000';
+    const API = new URLSearchParams(location.search).get('api') || localStorage.getItem('bc_api') || 'http://localhost:3000';
     let token = sessionStorage.getItem('bc_token') || null;
     let delTarget = null;
 
@@ -161,8 +158,10 @@
         if (!r.ok) { toast(data.error || 'Falha no login', 'no'); return; }
         token = data.token;
         sessionStorage.setItem('bc_token', token);
+        localStorage.setItem('bc_api', API);
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
+        document.getElementById('info').textContent = 'API: ' + API;
         toast('Sessão iniciada como ' + (data.user.name || user), 'ok');
         carregar();
       } catch (e) {
@@ -371,6 +370,7 @@
     if (token) {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app').style.display = 'flex';
+      document.getElementById('api-atual').textContent = API;
       carregar();
     }
   </script>
