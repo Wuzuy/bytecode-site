@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ByteCode — Tela do Quest (mockup)</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --panel: #0d1322;
+      --line: #1c2740;
+      --text: #e8eefc;
+      --muted: #8fa1c8;
+      --accent: #22d3ee;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    /* grade de lente sutil (VR) */
+    body::before {
+      content: "";
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+      pointer-events: none;
+    }
+    .screen {
+      position: relative;
+      width: min(640px, 94vw);
+      min-height: 480px;
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel), #0a0f1c);
+      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+      padding: 34px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .top {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      font-weight: 800;
+      letter-spacing: 2px;
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .brand b { color: var(--accent); }
+    .pill {
+      font-size: .7rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .pill.ok { color: var(--ok); border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.08); }
+    .pill.no { color: var(--warn); border-color: rgba(251,191,36,.5); background: rgba(251,191,36,.08); }
+    .pill.good { color: var(--ok); border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.08); }
+    .identity {
+      text-align: center;
+    }
+    .identity .label {
+      font-size: .72rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .identity .who {
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    .identity .who small { color: var(--muted); font-weight: 500; }
+    .identity .hint { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+    .palm {
+      width: 120px; height: 120px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 26px;
+      background: rgba(34,211,238,.06);
+      border: 1px dashed var(--line);
+      font-size: 60px;
+      transition: border-color .3s, background .3s;
+    }
+    .screen.aguardando .palm { border-color: var(--accent); box-shadow: 0 0 40px rgba(34,211,238,.25); }
+    .screen.validado .palm { border-color: var(--ok); background: rgba(52,211,153,.08); box-shadow: 0 0 40px rgba(52,211,153,.3); }
+    .prompt {
+      text-align: center;
+    }
+    .prompt .t {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    .prompt .s {
+      font-size: .9rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .steps {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+    .dot.on { background: var(--accent); }
+    .dot.good { background: var(--ok); }
+    .status {
+      font-size: .85rem;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+    .status b { color: var(--accent); }
+    .status.ok b { color: var(--ok); }
+    .controls {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 26px;
+      font-size: .72rem;
+      color: var(--muted);
+    }
+    .controls span b { color: var(--text); }
+    .demo {
+      position: absolute;
+      bottom: 10px;
+      right: 14px;
+      font-size: .7rem;
+      color: #3b4b74;
+    }
+    .btn {
+      position: absolute;
+      bottom: 10px;
+      left: 14px;
+      font-size: .72rem;
+      color: var(--accent);
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen aguardando" id="screen">
+    <div class="top">
+      <div class="brand">BYTE<b>CODE</b></div>
+      <div class="pill no" id="pill">Dispositivo bloqueado</div>
+    </div>
+
+    <div class="identity">
+      <div class="label">Quem é você</div>
+      <div class="who">Carlos M. <small>(carlos)</small></div>
+      <div class="hint">pressione <b>X</b> para trocar</div>
+    </div>
+
+    <div class="palm" id="palm">🖐</div>
+
+    <div class="prompt">
+      <div class="t" id="titulo">Coloque sua mão</div>
+      <div class="s" id="subtitulo">Mostre a palma aberta e segure parado</div>
+    </div>
+
+    <div class="steps" id="steps">
+      <span class="dot good"></span>
+      <span class="dot on"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+
+    <div class="status" id="status">Aguardando a mão… <b>10/s</b></div>
+
+    <div class="controls">
+      <span><b>A</b> verificar</span>
+      <span><b>B</b> cadastrar</span>
+      <span><b>X</b> identidade</span>
+      <span><b>Y</b> cancelar</span>
+    </div>
+
+    <button class="btn" onclick="validar()">▶ validar</button>
+    <button class="btn" style="left:104px;" onclick="resetar()">↺ resetar</button>
+    <div class="demo">mockup · Quest</div>
+  </div>
+
+  <script>
+    function validar() {
+      const s = document.getElementById('screen');
+      s.classList.remove('aguardando');
+      s.classList.add('validado');
+      document.getElementById('pill').className = 'pill good';
+      document.getElementById('pill').textContent = 'Autenticação validada';
+      document.getElementById('titulo').textContent = 'Acesso liberado';
+      document.getElementById('subtitulo').textContent = 'Retire a mão para continuar';
+      document.getElementById('status').innerHTML = '<b style="color:#34d399">✔ AUTENTICAÇÃO VALIDADA</b>';
+      const dots = document.getElementById('steps').children;
+      for (const d of dots) d.className = 'dot good';
+    }
+    function resetar() {
+      const s = document.getElementById('screen');
+      s.classList.add('aguardando');
+      s.classList.remove('validado');
+      document.getElementById('pill').className = 'pill no';
+      document.getElementById('pill').textContent = 'Dispositivo bloqueado';
+      document.getElementById('titulo').textContent = 'Coloque sua mão';
+      document.getElementById('subtitulo').textContent = 'Mostre a palma aberta e segure parado';
+      document.getElementById('status').innerHTML = 'Aguardando a mão… <b>10/s</b>';
+      const dots = document.getElementById('steps').children;
+      dots[0].className = 'dot good';
+      for (let i = 1; i < dots.length; i++) dots[i].className = 'dot on';
+    }
+  </script>
+</body>
+</html>
