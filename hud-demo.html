@@ -117,6 +117,8 @@
 
 <!-- ============ CONSOLE DO APRESENTADOR ============ -->
 <div id="console">
+  <h3>Apresentação</h3>
+  <button class="autodemo" onclick="hudPura()">🖥 HUD pura (esconder painel de controle)</button>
   <h3>Fluxo</h3>
   <button class="autodemo" onclick="autoDemo()">▶ Auto-demo (fluxo completo)</button>
   <button class="primario" onclick="estado('BOOT')">BOOT — inicializando</button>
@@ -211,6 +213,24 @@
     if (op === 'NENHUMA') { IND.textContent = 'MÃO: nenhuma'; IND.style.color = CORES.negado; }
     else if (op === 'ABRA') { IND.textContent = 'ABRA os dedos — mostre a PALMA'; IND.style.color = CORES.amarelo; }
     else { IND.textContent = 'MÃO OK — capturando 2/3'; IND.style.color = 'rgb(102, 255, 140)'; }
+  }
+
+  // ---- HUD pura: esconde o console e a tag — só a HUD na tela ----
+  function hudPura() {
+    const c = document.getElementById('console');
+    const t = document.querySelector('.tag-passthrough');
+    const visor = document.getElementById('visor');
+    if (c.style.display === 'none') {
+      c.style.display = '';
+      if (t) t.style.display = '';
+      if (visor) visor.style.background = '';
+      document.body.style.cursor = '';
+    } else {
+      c.style.display = 'none';
+      if (t) t.style.display = 'none';
+      if (visor) visor.style.background = 'radial-gradient(ellipse at 50% 30%, rgba(120,140,170,.6), transparent 60%), linear-gradient(160deg, #4a5c70, #222c38 65%, #181f29)';
+      document.body.style.cursor = 'none';
+    }
   }
 
   // ---- Auto-demo: toca o fluxo real na ordem com tempos reais ----
