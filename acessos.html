@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ByteCode — Histórico de Acessos</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    body { height: 100vh; display: flex; overflow: hidden; }
+    #login-screen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 34px; width: 340px; text-align: center; }
+    .login-box img { height: 40px; margin-bottom: 18px; }
+    .login-box input { width: 100%; padding: 11px 12px; margin-bottom: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
+    nav.app { width: 230px; background: var(--surface); border-right: 1px solid var(--border); padding: 18px 14px; display: flex; flex-direction: column; gap: 4px; }
+    nav.app .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; margin: 0 6px 16px; }
+    nav.app .brand img { height: 22px; }
+    main { flex: 1; overflow-y: auto; padding: 26px 30px; position: relative; }
+    .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .head h2 { margin: 0; font-size: 1.3rem; }
+    .actions { display: flex; gap: 8px; }
+    .actions button { padding: 7px 12px; font-size: .8rem; }
+    .toast { position: fixed; top: 18px; right: 18px; z-index: 999; padding: 12px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); box-shadow: 0 8px 24px rgba(0,0,0,.5); font-size: .88rem; }
+    .toast.ok { border-color: var(--success); color: var(--success); }
+    .toast.no { border-color: var(--danger); color: var(--danger); }
+    table .mono { font-family: monospace; }
+    .empty { color: var(--muted); font-size: .85rem; }
+    .badge.liberado { color: var(--success); border-color: var(--success); }
+    .badge.bloqueado { color: var(--danger); border-color: var(--danger); }
+
+    @media (max-width: 900px) {
+      body { flex-direction: column; overflow: auto; }
+      nav.app { width: 100%; flex-direction: row; align-items: center; gap: 10px; overflow-x: auto; padding: 10px 14px; border-right: none; border-bottom: 1px solid var(--border); }
+      nav.app .brand { margin: 0 8px 0 0; white-space: nowrap; }
+      main { padding: 16px; }
+      .head h2 { font-size: 1.05rem; }
+      table { font-size: .8rem; }
+      .actions button { font-size: .72rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="login-screen">
+    <div class="login-box">
+      <img src="ByteCode.png" alt="ByteCode" onerror="this.style.display='none'">
+      <h3 style="margin:0 0 4px;">Histórico de Acessos</h3>
+      <p style="font-size:.85rem; margin:0 0 18px;">Auditoria das liberações e bloqueios</p>
+      <input type="text" id="login-user" placeholder="Usuário (admin)">
+      <input type="password" id="login-pass" placeholder="Senha (admin123)">
+      <button class="btn primary" style="width:100%;" onclick="fazerLogin()">Entrar</button>
+      <p style="font-size:.75rem; color:var(--muted); margin-top:14px;">Precisa da permissão log:ver (admin/gerente)</p>
+    </div>
+  </div>
+
+  <div id="app" style="display:none; width:100%;">
+    <nav class="app">
+      <div class="brand"><img src="ByteCode.png" alt="" onerror="this.style.display='none'"><span>BYTE<span style="color:var(--accent)">CODE</span></span></div>
+      <button class="btn" style="text-align:left;" onclick="carregar()">Atualizar acessos</button>
+      <button class="btn danger" style="text-align:left;" onclick="limparAcessos()">Limpar histórico</button>
+      <button class="btn" style="text-align:left; margin-top:auto; color:var(--danger); border-top:1px solid var(--border); border-radius:0;" onclick="sair()">Encerrar sessão</button>
+    </nav>
+    <main>
+      <div class="head">
+        <h2>Acessos recentes</h2>
+        <span class="empty" id="info"></span>
+      </div>
+      <div class="card" style="padding:0; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Quando</th>
+              <th>Quem</th>
+              <th>Local</th>
+              <th>Recurso</th>
+              <th>Decisão</th>
+              <th>Motivo</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="8" class="empty">Faça login para carregar</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API = new URLSearchParams(location.search).get('api') || localStorage.getItem('bc_api') || 'http://localhost:3000';
+    let token = sessionStorage.getItem('bc_token') || null;
+
+    function toast(msg, type) {
+      const t = document.createElement('div');
+      t.className = 'toast ' + type;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    }
+
+    async function api(path, method = 'GET', body) {
+      const r = await fetch(API + path, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        throw new Error((data.error || ('HTTP ' + r.status)) + ' — ' + path);
+      }
+      return data;
+    }
+
+    async function fazerLogin() {
+      const user = document.getElementById('login-user').value.trim();
+      const pass = document.getElementById('login-pass').value;
+      try {
+        const r = await fetch(API + '/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pass })
+        });
+        const data = await r.json();
+        if (!r.ok) { toast(data.error || 'Falha no login', 'no'); return; }
+        token = data.token;
+        sessionStorage.setItem('bc_token', token);
+        localStorage.setItem('bc_api', API);
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        document.getElementById('info').textContent = 'API: ' + API;
+        toast('Sessão iniciada como ' + (data.user.name || user), 'ok');
+        carregar();
+      } catch (e) {
+        toast('Backend offline? ' + e.message, 'no');
+      }
+    }
+
+    function sair() {
+      token = null;
+      sessionStorage.removeItem('bc_token');
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('login-user').value = '';
+      document.getElementById('login-pass').value = '';
+    }
+
+    function esc(v) { return (v == null ? '' : String(v)).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+    async function carregar() {
+      const tb = document.getElementById('tbody');
+      const info = document.getElementById('info');
+      tb.innerHTML = '<tr><td colspan="8" class="empty">Carregando...</td></tr>';
+      try {
+        const { logs } = await api('/acessos');
+        info.textContent = logs.length + ' registro(s) — API: ' + API;
+        if (!logs.length) {
+          tb.innerHTML = '<tr><td colspan="8" class="empty">Nenhum acesso registrado ainda.</td></tr>';
+          return;
+        }
+        tb.innerHTML = logs.map(l => `
+          <tr>
+            <td class="mono">${l.id}</td>
+            <td class="mono">${esc(l.created_at)}</td>
+            <td>${l.user_id ? esc(l.user_name + ' (' + l.username + ')') : '— desconhecido —'}</td>
+            <td>${esc(l.local)}</td>
+            <td class="mono">${esc(l.recurso)}</td>
+            <td><span class="badge ${l.decision === 'LIBERADO' ? 'liberado' : 'bloqueado'}">${l.decision}</span></td>
+            <td class="mono">${esc(l.motivo)}</td>
+            <td class="mono">${l.biometria_score != null ? Number(l.biometria_score).toFixed(3) : '—'}</td>
+          </tr>`).join('');
+      } catch (e) {
+        tb.innerHTML = '<tr><td colspan="8" class="empty">' + esc(e.message) + '</td></tr>';
+      }
+    }
+
+    async function limparAcessos() {
+      if (!confirm('Limpar TODO o histórico de acessos? Esta ação não pode ser desfeita.')) return;
+      try {
+        const r = await api('/acessos', 'DELETE');
+        toast((r.message || 'Histórico limpo') + ' (' + (r.removidos || 0) + ' registros)', 'ok');
+        carregar();
+      } catch (e) {
+        toast(e.message, 'no');
+      }
+    }
+  </script>
+</body>
+</html>
