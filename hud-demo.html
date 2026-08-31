@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ByteCode — Demo da HUD do Quest</title>
+<style>
+  :root {
+    --painel: rgba(15, 20, 28, 0.94);
+    --fundo: rgba(0, 0, 0, 0.45);
+    --texto: #ffffff;
+    --status: #e6edff;
+    --verde: rgb(102, 255, 140);
+    --vermelho: rgb(255, 115, 102);
+    --amarelo: #ffd400;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
+  body { height: 100vh; overflow: hidden; background: #0a0d12; }
+
+  /* ====== VISOR (simula o passthrough do Quest) ====== */
+  #visor {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 15%, rgba(90,110,140,.55), transparent 45%),
+      radial-gradient(ellipse at 80% 75%, rgba(60,80,60,.5), transparent 40%),
+      linear-gradient(160deg, #3a4a5c, #1c2430 60%, #141a22);
+  }
+  #visor .tag-passthrough {
+    position: absolute; top: 14px; left: 18px; color: rgba(255,255,255,.35);
+    font-size: .78rem; letter-spacing: .05em;
+  }
+
+  /* ====== HUD — replica exata do kiosk Unity ====== */
+  #hud {
+    position: absolute; inset: 0;
+    background: var(--fundo);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #painel {
+    width: min(96vw, 1100px);
+    height: min(88vh, 620px);
+    background: var(--painel);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    padding: 22px 30px 26px;
+    position: relative;
+  }
+  #logo { height: 12%; object-fit: contain; margin-top: 2px; }
+  #titulo {
+    color: var(--texto); font-size: clamp(1.6rem, 4.6vh, 2.6rem);
+    font-weight: 700; text-align: center; line-height: 1.15;
+  }
+  #status {
+    color: var(--status); font-size: clamp(1rem, 2.9vh, 1.55rem);
+    text-align: center; line-height: 1.45; white-space: pre-line;
+    min-height: 2.9em;
+  }
+  #indicador {
+    color: var(--amarelo); font-size: clamp(.95rem, 2.6vh, 1.4rem);
+    text-align: center; min-height: 1.6em;
+  }
+  #estado-atual {
+    position: absolute; bottom: 6px; right: 12px;
+    font-size: .7rem; color: rgba(255,255,255,.25); letter-spacing: .08em;
+  }
+
+  /* ====== CONSOLE DO APRESENTADOR ====== */
+  #console {
+    position: fixed; right: 16px; top: 16px; z-index: 50;
+    width: 250px; background: rgba(10,14,20,.92);
+    border: 1px solid #2a3545; border-radius: 12px;
+    padding: 14px; color: #dbe4f0; font-size: .82rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.6);
+    max-height: calc(100vh - 32px); overflow-y: auto;
+  }
+  #console h3 { font-size: .8rem; margin: 10px 0 6px; color: #8fa3bd; text-transform: uppercase; letter-spacing: .06em; }
+  #console h3:first-child { margin-top: 0; }
+  #console button {
+    display: block; width: 100%; margin: 3px 0; padding: 7px 9px;
+    background: #1a2330; color: #e6edff; border: 1px solid #2c3a4d;
+    border-radius: 7px; cursor: pointer; text-align: left; font-size: .8rem;
+  }
+  #console button:hover { background: #243148; }
+  #console button.primario { background: #12355a; border-color: #2a5a8f; }
+  #console button.autodemo { background: #0e4a2c; border-color: #1f8a4f; }
+  #console input, #console select {
+    width: 100%; margin: 3px 0; padding: 6px 8px; font-size: .8rem;
+    background: #121a26; color: #fff; border: 1px solid #2c3a4d; border-radius: 6px;
+  }
+  #console label { display: block; margin-top: 8px; color: #8fa3bd; font-size: .72rem; }
+  .dica { color: #7c8ca3; font-size: .7rem; margin-top: 10px; line-height: 1.4; }
+
+  @media (max-width: 800px) {
+    #console { position: static; width: 100%; max-height: 45vh; margin: 8px; }
+    body { overflow: auto; }
+    #visor { position: fixed; }
+    #hud { position: relative; height: 62vh; }
+  }
+</style>
+</head>
+<body>
+
+<div id="visor">
+  <span class="tag-passthrough">SIMULAÇÃO DO PASSTHROUGH (Meta Quest 3)</span>
+</div>
+
+<!-- ===================== HUD DO KIOSK ===================== -->
+<div id="hud">
+  <div id="painel">
+    <img id="logo" src="ByteCode.png" alt="ByteCode" onerror="this.style.display='none'">
+    <div id="titulo">ByteCode</div>
+    <div id="status">Inicializando dispositivo...</div>
+    <div id="indicador"></div>
+    <div id="estado-atual">ESTADO: BOOT</div>
+  </div>
+</div>
+
+<!-- ============ CONSOLE DO APRESENTADOR ============ -->
+<div id="console">
+  <h3>Fluxo</h3>
+  <button class="autodemo" onclick="autoDemo()">▶ Auto-demo (fluxo completo)</button>
+  <button class="primario" onclick="estado('BOOT')">BOOT — inicializando</button>
+  <button onclick="estado('SETUP_ADMIN')">SETUP ADMIN — 1º acesso</button>
+  <button onclick="estado('MAO')">MÃO — mostre a palma</button>
+  <button onclick="estado('VERIFICANDO')">VERIFICANDO…</button>
+  <button onclick="estado('LIBERADO')">LIBERADO ✓ (verde)</button>
+  <button onclick="estado('NEGADO')">NEGADO (vermelho)</button>
+  <button onclick="estado('SEM_BACKEND')">SEM CONEXÃO</button>
+
+  <h3>Personalizar</h3>
+  <label>Nome do usuário liberado</label>
+  <input id="nome" value="Ana S.">
+  <label>Motivo do bloqueio</label>
+  <select id="motivo">
+    <option value="DESCONHECIDO">Sua mão não está cadastrada neste dispositivo.</option>
+    <option value="SEM_BIOMETRIA">Mão não confere com o cadastro.</option>
+    <option value="SEM_PERMISSAO">Sem permissão de acesso neste dispositivo.</option>
+  </select>
+  <label>Indicador da mão (estado MÃO)</label>
+  <select id="indicadorOp">
+    <option value="NENHUMA">MÃO: nenhuma (vermelho)</option>
+    <option value="ABRA">ABRA os dedos — mostre a PALMA (amarelo)</option>
+    <option value="OK">MÃO OK — capturando 2/3 (verde)</option>
+  </select>
+  <button onclick="aplicarIndicador()">Aplicar indicador</button>
+
+  <p class="dica">A HUD replica as proporções/corens do kiosk no Unity (painel 1.1x0.8m a 1.3m). Clique nos estados para apresentar passo a passo.</p>
+</div>
+
+<script>
+  const TITULO = document.getElementById('titulo');
+  const STATUS = document.getElementById('status');
+  const IND = document.getElementById('indicador');
+  const TAG = document.getElementById('estado-atual');
+
+  const CORES = {
+    liberado: 'rgb(102, 255, 140)',
+    negado: 'rgb(255, 115, 102)',
+    padrao: '#ffffff',
+    status: '#e6edff'
+  };
+
+  function esc(v) { return String(v ?? ''); }
+
+  function estado(e) {
+    TITULO.style.color = CORES.padrao;
+    STATUS.style.color = CORES.status;
+    TAG.textContent = 'ESTADO: ' + e;
+    IND.textContent = '';
+    IND.style.color = '';
+
+    switch (e) {
+      case 'BOOT':
+        TITULO.textContent = 'ByteCode';
+        STATUS.textContent = 'Inicializando dispositivo...';
+        break;
+      case 'SETUP_ADMIN':
+        TITULO.textContent = 'PRIMEIRO ACESSO';
+        STATUS.textContent = 'Cadastre a mão do ADMINISTRADOR.\nMostre a PALMA ABERTA e segure parado.';
+        break;
+      case 'MAO':
+        TITULO.textContent = 'ByteCode';
+        STATUS.textContent = 'Mostre a PALMA da mão aberta\nna frente do rosto e segure parado.';
+        aplicarIndicador();
+        break;
+      case 'VERIFICANDO':
+        TITULO.textContent = 'Verificando...';
+        STATUS.textContent = 'Comparando sua mão com os cadastros...';
+        break;
+      case 'LIBERADO':
+        TITULO.textContent = 'ACESSO LIBERADO ✓';
+        STATUS.textContent = 'Bem-vindo(a), ' + esc(document.getElementById('nome').value) + '!';
+        TITULO.style.color = CORES.liberado;
+        STATUS.style.color = CORES.liberado;
+        break;
+      case 'NEGADO':
+        TITULO.textContent = 'ACESSO NEGADO';
+        STATUS.textContent = document.getElementById('motivo').value;
+        TITULO.style.color = CORES.negado;
+        STATUS.style.color = CORES.negado;
+        break;
+      case 'SEM_BACKEND':
+        TITULO.textContent = 'Sem conexão';
+        STATUS.textContent = 'Não foi possível falar com o servidor.\nTentando de novo em alguns segundos...';
+        break;
+    }
+  }
+
+  function aplicarIndicador() {
+    const op = document.getElementById('indicadorOp').value;
+    if (op === 'NENHUMA') { IND.textContent = 'MÃO: nenhuma'; IND.style.color = CORES.negado; }
+    else if (op === 'ABRA') { IND.textContent = 'ABRA os dedos — mostre a PALMA'; IND.style.color = CORES.amarelo; }
+    else { IND.textContent = 'MÃO OK — capturando 2/3'; IND.style.color = 'rgb(102, 255, 140)'; }
+  }
+
+  // ---- Auto-demo: toca o fluxo real na ordem com tempos reais ----
+  const SEQ = [
+    ['BOOT', 2.5], ['SETUP_ADMIN', 4], ['MAO', 5], ['VERIFICANDO', 3], ['LIBERADO', 5], ['MAO', 4], ['VERIFICANDO', 3], ['NEGADO', 5]
+  ];
+  let demoAtivo = false;
+  function autoDemo() {
+    if (demoAtivo) return;
+    demoAtivo = true;
+    let i = 0;
+    (function passo() {
+      if (i >= SEQ.length) { demoAtivo = false; return; }
+      const [est, t] = SEQ[i++];
+      estado(est);
+      setTimeout(passo, t * 1000);
+    })();
+  }
+</script>
+</body>
+</html>
