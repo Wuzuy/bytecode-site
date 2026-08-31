@@ -10,18 +10,23 @@ Exibe o projeto sem necessidade do óculos VR — com prints do ambiente virtual
 - `index.html` — conceito, problema, solução e pilares.
 - `vr.html` — reprodução dos estados de autenticação do protótipo Unity (sem acesso, autenticando, autorizado, não autorizado), leitura biométrica da mão e visão do porteiro.
 - `dashboard.html` — Central de Segurança: métricas, logs de acesso, usuários/papéis (RBAC) e simulador de API.
+- `biometria.html` — gestão dos cadastros das mãos (API real: 3D, impressão palmar, remover).
+- `acessos.html` — histórico de acessos (API real) + limpar.
+- `hud-demo.html` — réplica da HUD do kiosk (Quest) para apresentação.
 
 ## Como rodar localmente
 
-Abra `index.html` no navegador, ou:
-
 ```bash
-npx serve .
+node server.js   # http://localhost:4000
 ```
+
+O servidor faz proxy de `/api/*` para o backend real (mesmo comportamento do Vercel).
 
 ## Publicação
 
-O site é publicado via GitHub Pages (branch `main`).
+Deploy no **Vercel** (framework *Other*): `vercel.json` configura o proxy `/api/*` para o
+backend e as URLs limpas. O site não tem `package.json` de propósito — sem ele o Vercel
+serve o diretório como estático puro (todos os arquivos).
 
 ---
 
