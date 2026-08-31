@@ -1,9 +1,0 @@
-{
-  "name": "bytecode-site",
-  "version": "1.1.0",
-  "description": "Site de exibição e gestão do ByteCode (biometria das mãos, dashboard)",
-  "type": "module",
-  "scripts": {
-    "start": "node server.js"
-  }
-}
