@@ -87,7 +87,9 @@
   </div>
 
   <script>
-    const API = new URLSearchParams(location.search).get('api') || localStorage.getItem('bc_api') || 'http://177.202.185.67:30051';
+    const API_EXPLICITO = new URLSearchParams(location.search).get('api');
+    const API = API_EXPLICITO || localStorage.getItem('bc_api') || '/api';
+    const API_LABEL = API === '/api' ? 'proxy do site (/api)' : API;
     let token = sessionStorage.getItem('bc_token') || null;
 
     function toast(msg, type) {
@@ -127,10 +129,10 @@
         if (!r.ok) { toast(data.error || 'Falha no login', 'no'); return; }
         token = data.token;
         sessionStorage.setItem('bc_token', token);
-        localStorage.setItem('bc_api', API);
+        if (API_EXPLICITO) localStorage.setItem('bc_api', API);
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
-        document.getElementById('info').textContent = 'API: ' + API;
+        document.getElementById('info').textContent = 'API: ' + API_LABEL;
         toast('Sessão iniciada como ' + (data.user.name || user), 'ok');
         carregar();
       } catch (e) {
@@ -155,7 +157,7 @@
       tb.innerHTML = '<tr><td colspan="8" class="empty">Carregando...</td></tr>';
       try {
         const { logs } = await api('/acessos');
-        info.textContent = logs.length + ' registro(s) — API: ' + API;
+        info.textContent = logs.length + ' registro(s) — API: ' + API_LABEL;
         if (!logs.length) {
           tb.innerHTML = '<tr><td colspan="8" class="empty">Nenhum acesso registrado ainda.</td></tr>';
           return;

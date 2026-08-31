@@ -1,12 +1,15 @@
 // Servidor estático simples (zero dependências) para o site ByteCode.
 // Uso: npm start  →  http://localhost:4000
+// /api/* é PROXY para o backend real (igual ao vercel.json no deploy).
 import { createServer } from 'node:http';
+import { request } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const PORT = process.env.PORT || 4000;
+const BACKEND = process.env.BACKEND || 'http://177.202.185.67:30051';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -20,6 +23,20 @@ const MIME = {
 
 const server = createServer(async (req, res) => {
   try {
+    // Proxy /api/* → backend real (mesmo comportamento do Vercel).
+    if (req.url.startsWith('/api/')) {
+      const alvo = new URL(req.url.slice(4), BACKEND);
+      const p = request(alvo, { method: req.method, headers: req.headers }, (pr) => {
+        res.writeHead(pr.statusCode, pr.headers);
+        pr.pipe(res);
+      });
+      p.on('error', () => {
+        res.writeHead(502, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'Backend offline' }));
+      });
+      req.pipe(p);
+      return;
+    }
+
     let caminho = decodeURIComponent((req.url || '/').split('?')[0]);
     if (caminho === '/') caminho = '/index.html';
     const arquivo = normalize(join(ROOT, caminho));
