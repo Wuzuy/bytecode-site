@@ -222,3 +222,59 @@ td .mono { font-family: var(--mono); }
   padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 18px 0;
 }
 .callout b { color: var(--text); }
+
+/* ============================================================
+   RESPONSIVIDADE — mobile-first, aplicada a todas as páginas
+   ============================================================ */
+
+/* Tipografia fluida (diminui junto com a tela) */
+.hero h1 { font-size: clamp(1.8rem, 5.5vw, 2.6rem); }
+.hero .sub { font-size: clamp(.95rem, 2.6vw, 1.15rem); }
+h2 { font-size: clamp(1.25rem, 3.6vw, 1.8rem); }
+h3 { font-size: clamp(1rem, 2.6vw, 1.1rem); }
+body { font-size: clamp(.92rem, 2.2vw, 1rem); }
+
+/* Navbar: quebra linha e rola horizontalmente no celular */
+.nav { flex-wrap: wrap; gap: 10px 18px; padding: 10px 16px; }
+.nav .links {
+  margin-left: 0; width: 100%;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  display: flex; gap: 4px;
+  scrollbar-width: none;
+}
+.nav .links::-webkit-scrollbar { display: none; }
+.nav a { padding: 6px 10px; font-size: .85rem; white-space: nowrap; }
+.nav .brand img { height: 22px; }
+
+.wrap { padding: 24px 16px 60px; }
+section { margin-top: 40px; }
+.card { padding: 16px; }
+.btn { padding: 9px 16px; font-size: .88rem; }
+.hero { padding: 36px 0 20px; }
+.hero img.logo { height: 48px; }
+.hero .cta { flex-direction: column; align-items: center; }
+.hero .cta .btn { width: min(320px, 90vw); text-align: center; }
+
+/* Tabelas: rolam horizontalmente dentro do card em telas pequenas */
+@media (max-width: 760px) {
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+  th, td { padding: 8px 10px; }
+}
+
+/* Elementos específicos de mockups/dashboard */
+.step { gap: 12px; }
+.step .num { flex: 0 0 30px; height: 30px; font-size: .85rem; }
+.overlay-panel .glass { padding: 16px 20px; min-width: 200px; max-width: 280px; }
+.overlay-panel .glass h4 { font-size: 1.1rem; }
+.person-card { min-width: 0; flex-wrap: wrap; justify-content: center; text-align: center; }
+.hand { font-size: 3.6rem; }
+.hand-ring { width: 130px; height: 130px; }
+.stat .v { font-size: 1.5rem; }
+.foot { padding: 20px 16px; }
+
+@media (max-width: 480px) {
+  .nav .brand { font-size: .95rem; }
+  .nav a { font-size: .8rem; padding: 5px 8px; }
+  .frame .bar .hud { display: none; }
+  .frame .bar .name { font-size: .68rem; }
+}

@@ -38,6 +38,17 @@
     .modal .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     tr.clickable { cursor: pointer; }
     tr.clickable:hover { background: rgba(34,211,238,.06); }
+    /* Responsivo: sidebar vira barra horizontal no celular */
+    @media (max-width: 900px) {
+      body { flex-direction: column; overflow: auto; height: auto; }
+      nav.app { width: 100%; flex-direction: row; align-items: center; gap: 8px; overflow-x: auto; padding: 10px 12px; border-right: none; border-bottom: 1px solid var(--border); }
+      nav.app .brand { margin: 0 8px 0 0; white-space: nowrap; }
+      nav.app .lbl { display: none; }
+      nav.app button { white-space: nowrap; }
+      main { padding: 16px; }
+      .head { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .modal .row { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
