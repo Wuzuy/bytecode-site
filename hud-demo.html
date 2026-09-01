@@ -257,6 +257,18 @@
       setTimeout(passo, t * 1000);
     })();
   }
+
+  // Parâmetros de URL (para captura de prints): ?estado=X&nome=Y&indicador=OK&puro=1
+  (function () {
+    const p = new URLSearchParams(location.search);
+    const nome = p.get('nome');
+    const ind = p.get('indicador');
+    if (nome) document.getElementById('nome').value = nome;
+    if (ind) document.getElementById('indicadorOp').value = ind;
+    const est = p.get('estado');
+    if (est) estado(est.toUpperCase());
+    if (p.get('puro') === '1') hudPura();
+  })();
 </script>
 </body>
 </html>
