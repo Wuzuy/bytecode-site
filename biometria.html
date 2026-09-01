@@ -375,6 +375,13 @@
       document.getElementById('api-atual').textContent = API_LABEL;
       carregar();
     }
+
+    // ?auto=1 → login automático (admin/admin123) — para captura de prints.
+    if (new URLSearchParams(location.search).get('auto') === '1') {
+      document.getElementById('login-user').value = 'admin';
+      document.getElementById('login-pass').value = 'admin123';
+      fazerLogin();
+    }
   </script>
 </body>
 </html>
