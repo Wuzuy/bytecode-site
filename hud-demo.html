@@ -91,10 +91,18 @@
   .dica { color: #7c8ca3; font-size: .7rem; margin-top: 10px; line-height: 1.4; }
 
   @media (max-width: 800px) {
-    #console { position: static; width: 100%; max-height: 45vh; margin: 8px; }
-    body { overflow: auto; }
-    #visor { position: fixed; }
-    #hud { position: relative; height: 62vh; }
+    /* Console vira painel inferior fixo (rolável) */
+    #console {
+      position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+      width: auto; max-height: 42vh; margin: 0;
+      border-radius: 14px 14px 0 0; border-bottom: none;
+      box-shadow: 0 -8px 30px rgba(0,0,0,.6);
+      overflow-y: auto;
+    }
+    /* HUD central se encolhe para caber acima do console */
+    #hud { padding-bottom: 42vh; }
+    #painel { width: min(94vw, 1100px); height: min(54vh, 620px); padding: 12px 14px 16px; }
+    #estado-atual { display: none; }
   }
 </style>
 </head>
