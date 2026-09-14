@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const PORT = process.env.PORT || 4000;
-const BACKEND = process.env.BACKEND || 'http://177.202.185.67:30051';
+const BACKEND = process.env.BACKEND || 'http://nac-00.haskhosting.com.br:30051';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
